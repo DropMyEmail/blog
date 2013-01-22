@@ -1,4 +1,5 @@
 .bundle
+.gitignore
 .DS_Store
 .sass-cache
 .gist-cache
