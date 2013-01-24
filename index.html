@@ -93,7 +93,7 @@
   </header>
 
 
-  <div class="entry-content"><p>At <a href="http://dropmyemail">DropMyEmail</a>, we are evaluating open source private cloud storage solutions. We have found <a href="http://swift.openstack.org">OpenStack Swift</a> to be the best choice in the market right now. We are documenting the steps to build a prototype swift cluster. Much of the work is from this amazing <a href="http://www.buildcloudstorage.com/2011/10/installing-openstack-swift-cluster-on.html">blog post by Amar</a> and the <a href="http://docs.openstack.org/developer/swift/howto_installmultinode.html">multiple server swift installation</a>. Our setup is largely similar except that we are on a more recent stack.</p>
+  <div class="entry-content"><p>At <a href="http://dropmyemail">DropMyEmail</a>, we are evaluating open source private cloud storage solutions. We have found <a href="http://swift.openstack.org">OpenStack Swift</a> to be the best choice in the market right now. We are documenting the steps to build a prototype swift cluster. Much of the work is from this amazing <a href="http://www.buildcloudstorage.com/2011/10/installing-openstack-swift-cluster-on.html">blog post by Amar</a> and the <a href="http://docs.openstack.org/developer/swift/howto_installmultinode.html">multiple server swift installation</a> document. Our setup is largely similar except that we are on a more recent stack.</p>
 
 <h2>Overview</h2>
 
@@ -146,20 +146,18 @@
 
 <p>Create <strong>/etc/swift/swift.conf</strong>. Add the following lines to it.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[swift-hash]</span>
-</span><span class='line'><span class="c1"># random unique string that can never change (DO NOT LOSE)</span>
-</span><span class='line'><span class="na">swift_hash_path_suffix</span> <span class="o">=</span> <span class="s">&lt;RESULTS FROM ABOVE od COMMAND&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[swift-hash]
+</span><span class='line'># random unique string that can never change (DO NOT LOSE)
+</span><span class='line'>swift_hash_path_suffix = &lt;RESULTS FROM ABOVE od COMMAND&gt;</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Change the owner to swift.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">chown</span> <span class="err">-R</span> <span class="err">swift:swift</span> <span class="err">/etc/swift</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo chown -R swift:swift /etc/swift</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Now save the image as an AMI. This base image can be used for the other instances.</p>
@@ -170,36 +168,33 @@
 
 <p>Run these commands to install the dependencies.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">apt-get</span> <span class="err">install</span> <span class="err">swift-proxy</span> <span class="err">memcached</span> <span class="err">swauth</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install swift-proxy memcached swauth</span></code></pre></td></tr></table></div></figure>
 
 
 <p>You could use <a href="http://keystone.openstack.org">OpenStack Keystone</a> for authentication. Cons is you need to set up and maintain another system for authentication. Swauth is a self-contained authentication server on the proxy server. If you just want to run Swift on its own, we&#8217;d recommend going with <a href="https://github.com/gholt/swauth">Swauth</a>.</p>
 
 <p>Next we create the SSL cert to encrypt our requests.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">cd</span> <span class="err">/etc/swift</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">openssl</span> <span class="err">req</span> <span class="err">-new</span> <span class="err">-x509</span> <span class="err">-nodes</span> <span class="err">-out</span> <span class="err">cert.crt</span> <span class="err">-keyout</span> <span class="err">cert.key</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/swift
+</span><span class='line'>sudo openssl req -new -x509 -nodes -out cert.crt -keyout cert.key</span></code></pre></td></tr></table></div></figure>
 
 
 <p>We need to replace the IP address in the memcached configuration file and then restart memcached. Check the private IP address for the instance and replace the IP with your own. We are <em>assuming</em> it is <strong>10.0.0.0</strong>.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="na">sudo export PROXY_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.0</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">perl</span> <span class="err">-pi</span> <span class="err">-e</span> <span class="err">&quot;s/-l</span> <span class="err">127.0.0.1/-l</span> <span class="err">$PROXY_LOCAL_NET_IP/&quot;</span> <span class="err">/etc/memcached.conf</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">service</span> <span class="err">memcached</span> <span class="err">restart</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo export PROXY_LOCAL_NET_IP=10.0.0.0
+</span><span class='line'>sudo perl -pi -e "s/-l 127.0.0.1/-l $PROXY_LOCAL_NET_IP/" /etc/memcached.conf
+</span><span class='line'>sudo service memcached restart</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Next we need to create the configuration file for the proxy server. Create <strong>/etc/swift/proxy-server.conf</strong> with the following contents. Remember to replace the URL and IP address with those from your instance.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -225,53 +220,50 @@
 <span class='line-number'>24</span>
 <span class='line-number'>25</span>
 <span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[DEFAULT]</span>
-</span><span class='line'><span class="na">bind_port</span> <span class="o">=</span> <span class="s">443</span>
-</span><span class='line'><span class="na">cert_file</span> <span class="o">=</span> <span class="s">/etc/swift/cert.crt</span>
-</span><span class='line'><span class="na">key_file</span> <span class="o">=</span> <span class="s">/etc/swift/cert.key</span>
-</span><span class='line'><span class="na">workers</span> <span class="o">=</span> <span class="s">8</span>
-</span><span class='line'><span class="na">user</span> <span class="o">=</span> <span class="s">swift</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[DEFAULT]
+</span><span class='line'>bind_port = 443
+</span><span class='line'>cert_file = /etc/swift/cert.crt
+</span><span class='line'>key_file = /etc/swift/cert.key
+</span><span class='line'>workers = 8
+</span><span class='line'>user = swift
 </span><span class='line'>
-</span><span class='line'><span class="k">[pipeline:main]</span>
-</span><span class='line'><span class="na">pipeline</span> <span class="o">=</span> <span class="s">healthcheck cache swauth proxy-server</span>
+</span><span class='line'>[pipeline:main]
+</span><span class='line'>pipeline = healthcheck cache swauth proxy-server
 </span><span class='line'>
-</span><span class='line'><span class="k">[app:proxy-server]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#proxy</span>
-</span><span class='line'><span class="na">allow_account_management</span> <span class="o">=</span> <span class="s">true</span>
+</span><span class='line'>[app:proxy-server]
+</span><span class='line'>use = egg:swift#proxy
+</span><span class='line'>allow_account_management = true
 </span><span class='line'>
-</span><span class='line'><span class="k">[filter:swauth]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swauth#swauth</span>
-</span><span class='line'><span class="na">set log_name</span> <span class="o">=</span> <span class="s">swauth</span>
-</span><span class='line'><span class="na">super_admin_key</span> <span class="o">=</span> <span class="s">swauthkey</span>
-</span><span class='line'><span class="na">default_swift_cluster</span> <span class="o">=</span> <span class="s">cluster_name#https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1#https://127.0.0.1:443/v1</span>
+</span><span class='line'>[filter:swauth]
+</span><span class='line'>use = egg:swauth#swauth
+</span><span class='line'>set log_name = swauth
+</span><span class='line'>super_admin_key = swauthkey
+</span><span class='line'>default_swift_cluster = cluster_name#https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1#https://127.0.0.1:443/v1
 </span><span class='line'>
-</span><span class='line'><span class="k">[filter:healthcheck]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#healthcheck</span>
+</span><span class='line'>[filter:healthcheck]
+</span><span class='line'>use = egg:swift#healthcheck
 </span><span class='line'>
-</span><span class='line'><span class="k">[filter:cache]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#memcache</span>
-</span><span class='line'><span class="na">memcache_servers</span> <span class="o">=</span> <span class="s">10.0.0.0:11211</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[filter:cache]
+</span><span class='line'>use = egg:swift#memcache
+</span><span class='line'>memcache_servers = 10.0.0.0:11211</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Now we create the rings.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">cd</span> <span class="err">/etc/swift</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">create</span> <span class="err">18</span> <span class="err">3</span> <span class="err">1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">create</span> <span class="err">18</span> <span class="err">3</span> <span class="err">1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">create</span> <span class="err">18</span> <span class="err">3</span> <span class="err">1</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/swift
+</span><span class='line'>sudo swift-ring-builder account.builder create 18 3 1
+</span><span class='line'>sudo swift-ring-builder container.builder create 18 3 1
+</span><span class='line'>sudo swift-ring-builder object.builder create 18 3 1</span></code></pre></td></tr></table></div></figure>
 
 
 <p>And set the owner back to swift.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">chown</span> <span class="err">-R</span> <span class="err">swift:swift</span> <span class="err">/etc/swift</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo chown -R swift:swift /etc/swift</span></code></pre></td></tr></table></div></figure>
 
 
 <p>This is it for now. We&#8217;ll set up the storage nodes first before coming back to the proxy server.</p>
@@ -284,70 +276,63 @@
 
 <p>The storage node contain the account, container and object servers. Install the dependencies.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">apt-get</span> <span class="err">install</span> <span class="err">swift-account</span> <span class="err">swift-container</span> <span class="err">swift-object</span> <span class="err">xfsprogs</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install swift-account swift-container swift-object xfsprogs</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Next we want to set up the partition.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">fdisk</span> <span class="err">/dev/xvdf</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo fdisk /dev/xvdf</span></code></pre></td></tr></table></div></figure>
 
 
 <p>FDisk will be prompt you for the values. You may follow the responses in order</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">n</span>
-</span><span class='line'><span class="err">p</span>
-</span><span class='line'><span class="err">1</span>
-</span><span class='line'><span class="err">Enter</span>
-</span><span class='line'><span class="err">Enter</span>
-</span><span class='line'><span class="err">w</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>n
+</span><span class='line'>p
+</span><span class='line'>1
+</span><span class='line'>Enter
+</span><span class='line'>Enter
+</span><span class='line'>w</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Next we build the <a href="http://en.wikipedia.org/wiki/XFS">XFS</a> file system within the partition.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="na">sudo mkfs.xfs -i size</span><span class="o">=</span><span class="s">1024 /dev/xvdf1</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo mkfs.xfs -i size=1024 /dev/xvdf1</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Append the following line to <strong>/etc/fstab</strong></p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="na">/dev/xvdf1 /srv/node/xvdf1 xfs noatime,nodiratime,nobarrier,logbufs</span><span class="o">=</span><span class="s">8 0 0</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/dev/xvdf1 /srv/node/xvdf1 xfs noatime,nodiratime,nobarrier,logbufs=8 0 0</span></code></pre></td></tr></table></div></figure>
 
 
 <p>We mount it.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">mkdir</span> <span class="err">-p</span> <span class="err">/srv/node/xvdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">mount</span> <span class="err">/srv/node/xvdf1</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo mkdir -p /srv/node/xvdf1
+</span><span class='line'>sudo mount /srv/node/xvdf1</span></code></pre></td></tr></table></div></figure>
 
 
 <p>And change the owner to swift.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">chown</span> <span class="err">-R</span> <span class="err">swift:swift</span> <span class="err">/srv/node</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo chown -R swift:swift /srv/node</span></code></pre></td></tr></table></div></figure>
 
 
 <h3>Rsync</h3>
 
 <p>We need to configure <a href="http://en.wikipedia.org/wiki/Rsync">rsync</a> as well. Create <strong>/etc/rsyncd.conf</strong>. Add the following to the file. <strong>STORAGE_LOCAL_NET_IP</strong> is the IP address of the instance. Change it accordingly.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -370,44 +355,41 @@
 <span class='line-number'>21</span>
 <span class='line-number'>22</span>
 <span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="na">uid</span> <span class="o">=</span> <span class="s">swift</span>
-</span><span class='line'><span class="na">gid</span> <span class="o">=</span> <span class="s">swift</span>
-</span><span class='line'><span class="na">log file</span> <span class="o">=</span> <span class="s">/var/log/rsyncd.log</span>
-</span><span class='line'><span class="na">pid file</span> <span class="o">=</span> <span class="s">/var/run/rsyncd.pid</span>
-</span><span class='line'><span class="na">address</span> <span class="o">=</span> <span class="s">&lt;STORAGE_LOCAL_NET_IP&gt;</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>uid = swift
+</span><span class='line'>gid = swift
+</span><span class='line'>log file = /var/log/rsyncd.log
+</span><span class='line'>pid file = /var/run/rsyncd.pid
+</span><span class='line'>address = &lt;STORAGE_LOCAL_NET_IP&gt;
 </span><span class='line'>
-</span><span class='line'><span class="k">[account]</span>
-</span><span class='line'><span class="na">max connections</span> <span class="o">=</span> <span class="s">2</span>
-</span><span class='line'><span class="na">path</span> <span class="o">=</span> <span class="s">/srv/node/</span>
-</span><span class='line'><span class="na">read only</span> <span class="o">=</span> <span class="s">false</span>
-</span><span class='line'><span class="na">lock file</span> <span class="o">=</span> <span class="s">/var/lock/account.lock</span>
+</span><span class='line'>[account]
+</span><span class='line'>max connections = 2
+</span><span class='line'>path = /srv/node/
+</span><span class='line'>read only = false
+</span><span class='line'>lock file = /var/lock/account.lock
 </span><span class='line'>
-</span><span class='line'><span class="k">[container]</span>
-</span><span class='line'><span class="na">max connections</span> <span class="o">=</span> <span class="s">2</span>
-</span><span class='line'><span class="na">path</span> <span class="o">=</span> <span class="s">/srv/node/</span>
-</span><span class='line'><span class="na">read only</span> <span class="o">=</span> <span class="s">false</span>
-</span><span class='line'><span class="na">lock file</span> <span class="o">=</span> <span class="s">/var/lock/container.lock</span>
+</span><span class='line'>[container]
+</span><span class='line'>max connections = 2
+</span><span class='line'>path = /srv/node/
+</span><span class='line'>read only = false
+</span><span class='line'>lock file = /var/lock/container.lock
 </span><span class='line'>
-</span><span class='line'><span class="k">[object]</span>
-</span><span class='line'><span class="na">max connections</span> <span class="o">=</span> <span class="s">2</span>
-</span><span class='line'><span class="na">path</span> <span class="o">=</span> <span class="s">/srv/node/</span>
-</span><span class='line'><span class="na">read only</span> <span class="o">=</span> <span class="s">false</span>
-</span><span class='line'><span class="na">lock file</span> <span class="o">=</span> <span class="s">/var/lock/object.lock</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[object]
+</span><span class='line'>max connections = 2
+</span><span class='line'>path = /srv/node/
+</span><span class='line'>read only = false
+</span><span class='line'>lock file = /var/lock/object.lock</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Enable rsync in the rsync configuration at <strong>/etc/default/rsync</strong>.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="na">RSYNC_ENABLE</span> <span class="o">=</span> <span class="s">true</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>RSYNC_ENABLE = true</span></code></pre></td></tr></table></div></figure>
 
 
 <p>And start rsync</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">service</span> <span class="err">rsync</span> <span class="err">start</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>service rsync start</span></code></pre></td></tr></table></div></figure>
 
 
 <h3>Account/Container/Object server configurations</h3>
@@ -416,7 +398,7 @@
 
 <p>The account server&#8217;s configuration file is at <strong>/etc/swift/account-server.conf</strong>.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -431,27 +413,26 @@
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[DEFAULT]</span>
-</span><span class='line'><span class="na">bind_ip</span> <span class="o">=</span> <span class="s">&lt;STORAGE_LOCAL_NET_IP&gt;</span>
-</span><span class='line'><span class="na">workers</span> <span class="o">=</span> <span class="s">2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[DEFAULT]
+</span><span class='line'>bind_ip = &lt;STORAGE_LOCAL_NET_IP&gt;
+</span><span class='line'>workers = 2
 </span><span class='line'>
-</span><span class='line'><span class="k">[pipeline:main]</span>
-</span><span class='line'><span class="na">pipeline</span> <span class="o">=</span> <span class="s">account-server</span>
+</span><span class='line'>[pipeline:main]
+</span><span class='line'>pipeline = account-server
 </span><span class='line'>
-</span><span class='line'><span class="k">[app:account-server]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#account</span>
+</span><span class='line'>[app:account-server]
+</span><span class='line'>use = egg:swift#account
 </span><span class='line'>
-</span><span class='line'><span class="k">[account-replicator]</span>
+</span><span class='line'>[account-replicator]
 </span><span class='line'>
-</span><span class='line'><span class="k">[account-auditor]</span>
+</span><span class='line'>[account-auditor]
 </span><span class='line'>
-</span><span class='line'><span class="k">[account-reaper]</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[account-reaper]</span></code></pre></td></tr></table></div></figure>
 
 
 <p>The container server&#8217;s configuration file is at <strong>/etc/swift/container-server.conf</strong>.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -466,27 +447,26 @@
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[DEFAULT]</span>
-</span><span class='line'><span class="na">bind_ip</span> <span class="o">=</span> <span class="s">&lt;STORAGE_LOCAL_NET_IP&gt;</span>
-</span><span class='line'><span class="na">workers</span> <span class="o">=</span> <span class="s">2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[DEFAULT]
+</span><span class='line'>bind_ip = &lt;STORAGE_LOCAL_NET_IP&gt;
+</span><span class='line'>workers = 2
 </span><span class='line'>
-</span><span class='line'><span class="k">[pipeline:main]</span>
-</span><span class='line'><span class="na">pipeline</span> <span class="o">=</span> <span class="s">container-server</span>
+</span><span class='line'>[pipeline:main]
+</span><span class='line'>pipeline = container-server
 </span><span class='line'>
-</span><span class='line'><span class="k">[app:container-server]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#container</span>
+</span><span class='line'>[app:container-server]
+</span><span class='line'>use = egg:swift#container
 </span><span class='line'>
-</span><span class='line'><span class="k">[container-replicator]</span>
+</span><span class='line'>[container-replicator]
 </span><span class='line'>
-</span><span class='line'><span class="k">[container-updater]</span>
+</span><span class='line'>[container-updater]
 </span><span class='line'>
-</span><span class='line'><span class="k">[container-auditor]</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[container-auditor]</span></code></pre></td></tr></table></div></figure>
 
 
 <p>The object server&#8217;s configuration file is at <strong>/etc/swift/object-server.conf</strong>.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -501,22 +481,21 @@
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[DEFAULT]</span>
-</span><span class='line'><span class="na">bind_ip</span> <span class="o">=</span> <span class="s">&lt;STORAGE_LOCAL_NET_IP&gt;</span>
-</span><span class='line'><span class="na">workers</span> <span class="o">=</span> <span class="s">2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[DEFAULT]
+</span><span class='line'>bind_ip = &lt;STORAGE_LOCAL_NET_IP&gt;
+</span><span class='line'>workers = 2
 </span><span class='line'>
-</span><span class='line'><span class="k">[pipeline:main]</span>
-</span><span class='line'><span class="na">pipeline</span> <span class="o">=</span> <span class="s">object-server</span>
+</span><span class='line'>[pipeline:main]
+</span><span class='line'>pipeline = object-server
 </span><span class='line'>
-</span><span class='line'><span class="k">[app:object-server]</span>
-</span><span class='line'><span class="na">use</span> <span class="o">=</span> <span class="s">egg:swift#object</span>
+</span><span class='line'>[app:object-server]
+</span><span class='line'>use = egg:swift#object
 </span><span class='line'>
-</span><span class='line'><span class="k">[object-replicator]</span>
+</span><span class='line'>[object-replicator]
 </span><span class='line'>
-</span><span class='line'><span class="k">[object-updater]</span>
+</span><span class='line'>[object-updater]
 </span><span class='line'>
-</span><span class='line'><span class="k">[object-auditor]</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[object-auditor]</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Repeat these steps for the rest of the storage nodes.</p>
@@ -525,7 +504,7 @@
 
 <p>Let&#8217;s go back to the proxy server. We are going to create a script to build the rings. Create a file at <strong>/etc/swift/build_rings.sh</strong>. Replace the IP address accordingly.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -565,153 +544,143 @@
 <span class='line-number'>38</span>
 <span class='line-number'>39</span>
 <span class='line-number'>40</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="c1">#!/bin/sh</span>
-</span><span class='line'><span class="na">export ZONE</span><span class="o">=</span><span class="s">1                  # set the zone number for that storage device</span>
-</span><span class='line'><span class="na">export STORAGE_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.1   # and the IP address</span>
-</span><span class='line'><span class="na">export WEIGHT</span><span class="o">=</span><span class="s">100               # relative weight (higher for bigger/faster disks)</span>
-</span><span class='line'><span class="na">export DEVICE</span><span class="o">=</span><span class="s">sdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE</span> <span class="err">$WEIGHT</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#!/bin/sh
+</span><span class='line'>export ZONE=1                  # set the zone number for that storage device
+</span><span class='line'>export STORAGE_LOCAL_NET_IP=10.0.0.1   # and the IP address
+</span><span class='line'>export WEIGHT=100               # relative weight (higher for bigger/faster disks)
+</span><span class='line'>export DEVICE=sdf1
+</span><span class='line'>sudo swift-ring-builder account.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder container.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder object.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE $WEIGHT
 </span><span class='line'>
-</span><span class='line'><span class="na">export ZONE</span><span class="o">=</span><span class="s">2                  # set the zone number for that storage device</span>
-</span><span class='line'><span class="na">export STORAGE_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.2   # and the IP address</span>
-</span><span class='line'><span class="na">export WEIGHT</span><span class="o">=</span><span class="s">100               # relative weight (higher for bigger/faster disks</span>
-</span><span class='line'><span class="na">export DEVICE</span><span class="o">=</span><span class="s">sdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE</span> <span class="err">$WEIGHT</span>
+</span><span class='line'>export ZONE=2                  # set the zone number for that storage device
+</span><span class='line'>export STORAGE_LOCAL_NET_IP=10.0.0.2   # and the IP address
+</span><span class='line'>export WEIGHT=100               # relative weight (higher for bigger/faster disks
+</span><span class='line'>export DEVICE=sdf1
+</span><span class='line'>sudo swift-ring-builder account.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder container.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder object.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE $WEIGHT
 </span><span class='line'>
-</span><span class='line'><span class="na">export ZONE</span><span class="o">=</span><span class="s">3                  # set the zone number for that storage device</span>
-</span><span class='line'><span class="na">export STORAGE_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.3   # and the IP address</span>
-</span><span class='line'><span class="na">export WEIGHT</span><span class="o">=</span><span class="s">100               # relative weight (higher for bigger/faster disks)</span>
-</span><span class='line'><span class="na">export DEVICE</span><span class="o">=</span><span class="s">sdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE</span> <span class="err">$WEIGHT</span>
+</span><span class='line'>export ZONE=3                  # set the zone number for that storage device
+</span><span class='line'>export STORAGE_LOCAL_NET_IP=10.0.0.3   # and the IP address
+</span><span class='line'>export WEIGHT=100               # relative weight (higher for bigger/faster disks)
+</span><span class='line'>export DEVICE=sdf1
+</span><span class='line'>sudo swift-ring-builder account.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder container.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder object.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE $WEIGHT
 </span><span class='line'>
-</span><span class='line'><span class="na">export ZONE</span><span class="o">=</span><span class="s">4                  # set the zone number for that storage device</span>
-</span><span class='line'><span class="na">export STORAGE_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.4   # and the IP address</span>
-</span><span class='line'><span class="na">export WEIGHT</span><span class="o">=</span><span class="s">100               # relative weight (higher for bigger/faster disks</span>
-</span><span class='line'><span class="na">export DEVICE</span><span class="o">=</span><span class="s">sdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE</span> <span class="err">$WEIGHT</span>
+</span><span class='line'>export ZONE=4                  # set the zone number for that storage device
+</span><span class='line'>export STORAGE_LOCAL_NET_IP=10.0.0.4   # and the IP address
+</span><span class='line'>export WEIGHT=100               # relative weight (higher for bigger/faster disks
+</span><span class='line'>export DEVICE=sdf1
+</span><span class='line'>sudo swift-ring-builder account.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder container.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder object.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE $WEIGHT
 </span><span class='line'>
-</span><span class='line'><span class="na">export ZONE</span><span class="o">=</span><span class="s">5                  # set the zone number for that storage device</span>
-</span><span class='line'><span class="na">export STORAGE_LOCAL_NET_IP</span><span class="o">=</span><span class="s">10.0.0.5   # and the IP address</span>
-</span><span class='line'><span class="na">export WEIGHT</span><span class="o">=</span><span class="s">100               # relative weight (higher for bigger/faster disks</span>
-</span><span class='line'><span class="na">export DEVICE</span><span class="o">=</span><span class="s">sdf1</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">add</span> <span class="err">z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE</span> <span class="err">$WEIGHT</span>
-</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>export ZONE=5                  # set the zone number for that storage device
+</span><span class='line'>export STORAGE_LOCAL_NET_IP=10.0.0.5   # and the IP address
+</span><span class='line'>export WEIGHT=100               # relative weight (higher for bigger/faster disks
+</span><span class='line'>export DEVICE=sdf1
+</span><span class='line'>sudo swift-ring-builder account.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6002/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder container.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6001/$DEVICE $WEIGHT
+</span><span class='line'>sudo swift-ring-builder object.builder add z$ZONE-$STORAGE_LOCAL_NET_IP:6000/$DEVICE $WEIGHT</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Make the script executable and run it.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">chmod</span> <span class="err">+x</span> <span class="err">/etc/swift/build_rings.sh</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">/etc/swift/build_rings.sh</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo chmod +x /etc/swift/build_rings.sh
+</span><span class='line'>sudo /etc/swift/build_rings.sh</span></code></pre></td></tr></table></div></figure>
 
 
 <p>We continue the build the rings.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo swift-ring-builder account.builder
+</span><span class='line'>sudo swift-ring-builder container.builder
+</span><span class='line'>sudo swift-ring-builder object.builder</span></code></pre></td></tr></table></div></figure>
 
 
 <p>And rebalance them.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">account.builder</span> <span class="err">rebalance</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">container.builder</span> <span class="err">rebalance</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-ring-builder</span> <span class="err">object.builder</span> <span class="err">rebalance</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo swift-ring-builder account.builder rebalance
+</span><span class='line'>sudo swift-ring-builder container.builder rebalance
+</span><span class='line'>sudo swift-ring-builder object.builder rebalance</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Copy your instance&#8217;s private key(the key file which you use for sshing in to your instance) to the proxy server. I&#8217;m assuming it is <strong>private_key.pem</strong>. Change the permission of <strong>private_key.pem</strong> to <strong>0600</strong>.</p>
 
 <p>Next we need to propagate the ring files to all the storage nodes</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">scp</span> <span class="err">-i</span> <span class="err">private_key.pem</span> <span class="err">/etc/swift/*.gz</span> <span class="err">ubuntu@10.0.0.1:/etc/swift</span>
-</span><span class='line'><span class="err">scp</span> <span class="err">-i</span> <span class="err">private_key.pem</span> <span class="err">/etc/swift/*.gz</span> <span class="err">ubuntu@10.0.0.2:/etc/swift</span>
-</span><span class='line'><span class="err">scp</span> <span class="err">-i</span> <span class="err">private_key.pem</span> <span class="err">/etc/swift/*.gz</span> <span class="err">ubuntu@10.0.0.3:/etc/swift</span>
-</span><span class='line'><span class="err">scp</span> <span class="err">-i</span> <span class="err">private_key.pem</span> <span class="err">/etc/swift/*.gz</span> <span class="err">ubuntu@10.0.0.4:/etc/swift</span>
-</span><span class='line'><span class="err">scp</span> <span class="err">-i</span> <span class="err">private_key.pem</span> <span class="err">/etc/swift/*.gz</span> <span class="err">ubuntu@10.0.0.5:/etc/swift</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>scp -i private_key.pem /etc/swift/*.gz ubuntu@10.0.0.1:/etc/swift
+</span><span class='line'>scp -i private_key.pem /etc/swift/*.gz ubuntu@10.0.0.2:/etc/swift
+</span><span class='line'>scp -i private_key.pem /etc/swift/*.gz ubuntu@10.0.0.3:/etc/swift
+</span><span class='line'>scp -i private_key.pem /etc/swift/*.gz ubuntu@10.0.0.4:/etc/swift
+</span><span class='line'>scp -i private_key.pem /etc/swift/*.gz ubuntu@10.0.0.5:/etc/swift</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Log in to each of the storage node and run these commands.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">cd</span> <span class="err">/etc/swift</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">chown</span> <span class="err">-R</span> <span class="err">swift:swift</span> <span class="err">/etc/swift</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-init</span> <span class="err">all</span> <span class="err">start</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/swift
+</span><span class='line'>sudo chown -R swift:swift /etc/swift
+</span><span class='line'>sudo swift-init all start</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Your storage node should be running!</p>
 
 <p>Now we need to start the proxy server. Log into the proxy server and run these commands.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">chown</span> <span class="err">-R</span> <span class="err">swift:swift</span> <span class="err">/etc/swift</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swift-init</span> <span class="err">proxy</span> <span class="err">start</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo chown -R swift:swift /etc/swift
+</span><span class='line'>sudo swift-init proxy start</span></code></pre></td></tr></table></div></figure>
 
 
 <h3>Setting the authentication</h3>
 
 <p>We need to create the user for authentication.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">swauth-prep</span> <span class="err">-K</span> <span class="err">swauthkey</span> <span class="err">-A</span> <span class="err">https://127.0.0.1/auth/</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">swauth-add-user</span> <span class="err">-K</span> <span class="err">swauthkey</span> <span class="err">-A</span> <span class="err">https://127.0.0.1/auth/</span> <span class="err">-a</span> <span class="err">test</span> <span class="err">tester</span> <span class="err">testing</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo swauth-prep -K swauthkey -A https://127.0.0.1/auth/
+</span><span class='line'>sudo swauth-add-user -K swauthkey -A https://127.0.0.1/auth/ -a test tester testing</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>Using the Swift cluster</h2>
 
 <p>We have chosen to use another EC2 instance to act as a Swift client. As usual, create an instance and run the following commands.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">sudo</span> <span class="err">add-apt-repository</span> <span class="err">ppa:swift-core/release</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">apt-get</span> <span class="err">update</span>
-</span><span class='line'><span class="err">sudo</span> <span class="err">apt-get</span> <span class="err">install</span> <span class="err">swift</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo add-apt-repository ppa:swift-core/release
+</span><span class='line'>sudo apt-get update
+</span><span class='line'>sudo apt-get install swift</span></code></pre></td></tr></table></div></figure>
 
 
 <p>We need to obtain the authentication token first. As usual, replace the url with your own.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">curl</span> <span class="err">-k</span> <span class="err">-v</span> <span class="err">-H</span> <span class="err">&#39;X-Storage-User:</span> <span class="err">test:tester&#39;</span> <span class="err">-H</span> <span class="err">&#39;X-Storage-Pass:</span> <span class="err">testing&#39;</span> <span class="err">https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>curl -k -v -H 'X-Storage-User: test:tester' -H 'X-Storage-Pass: testing' https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0</span></code></pre></td></tr></table></div></figure>
 
 
 <p>You should get this output</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -749,57 +718,55 @@
 <span class='line-number'>36</span>
 <span class='line-number'>37</span>
 <span class='line-number'>38</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">*</span> <span class="err">About</span> <span class="err">to</span> <span class="err">connect()</span> <span class="err">to</span> <span class="err">ec2-1-2-3-4.compute-1.amazonaws.com</span> <span class="err">port</span> <span class="err">443</span> <span class="err">(</span><span class="c1">#0)</span>
-</span><span class='line'><span class="err">*</span>   <span class="err">Trying</span> <span class="err">10.0.0.1...</span> <span class="err">connected</span>
-</span><span class='line'><span class="err">*</span> <span class="err">successfully</span> <span class="err">set</span> <span class="err">certificate</span> <span class="err">verify</span> <span class="err">locations:</span>
-</span><span class='line'><span class="err">*</span>   <span class="err">CAfile:</span> <span class="err">none</span>
-</span><span class='line'>  <span class="err">CApath:</span> <span class="err">/etc/ssl/certs</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Server</span> <span class="err">hello</span> <span class="err">(2):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">CERT</span> <span class="err">(11):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Server</span> <span class="err">finished</span> <span class="err">(14):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Client</span> <span class="err">key</span> <span class="err">exchange</span> <span class="err">(16):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">change</span> <span class="err">cipher,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Finished</span> <span class="err">(20):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">change</span> <span class="err">cipher,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Finished</span> <span class="err">(20):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSL</span> <span class="err">connection</span> <span class="err">using</span> <span class="err">AES256-SHA</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Server</span> <span class="err">certificate:</span>
-</span><span class='line'><span class="na">*        subject: C</span><span class="o">=</span><span class="s">AU; ST=Some-State; O=Internet Widgits Pty Ltd</span>
-</span><span class='line'><span class="err">*</span>        <span class="err">start</span> <span class="err">date:</span> <span class="err">2013-01-23</span> <span class="err">06:24:57</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">*</span>        <span class="err">expire</span> <span class="err">date:</span> <span class="err">2013-02-22</span> <span class="err">06:24:57</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSL:</span> <span class="err">unable</span> <span class="err">to</span> <span class="err">obtain</span> <span class="err">common</span> <span class="err">name</span> <span class="err">from</span> <span class="err">peer</span> <span class="err">certificate</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">GET</span> <span class="err">/auth/v1.0</span> <span class="err">HTTP/1.1</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">User-Agent:</span> <span class="err">curl/7.22.0</span> <span class="err">(x86_64-pc-linux-gnu)</span> <span class="err">libcurl/7.22.0</span> <span class="err">OpenSSL/1.0.1</span> <span class="err">zlib/1.2.3.4</span> <span class="err">libidn/1.23</span> <span class="err">librtmp/2.3</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">Host:</span> <span class="err">ec2-1-2-3-4.compute-1.amazonaws.com</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">Accept:</span> <span class="err">*/*</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">X-Storage-User:</span> <span class="err">test:tester</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">X-Storage-Pass:</span> <span class="err">testing</span>
-</span><span class='line'><span class="err">&gt;</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">HTTP/1.1</span> <span class="err">200</span> <span class="err">OK</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Storage-Url:</span> <span class="err">https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Storage-Token:</span> <span class="err">AUTH_tkd26a954e86534b9498f1b196fdb60ac2</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Auth-Token:</span> <span class="err">AUTH_tkd26a954e86534b9498f1b196fdb60ac2</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">Content-Length:</span> <span class="err">155</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">Date:</span> <span class="err">Thu,</span> <span class="err">24</span> <span class="err">Jan</span> <span class="err">2013</span> <span class="err">03:59:09</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">&lt;</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Connection</span> <span class="c1">#0 to host ec2-1-2-3-4.compute-1.amazonaws.com left intact</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Closing</span> <span class="err">connection</span> <span class="c1">#0</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">alert,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">{&quot;storage&quot;:</span> <span class="err">{&quot;cluster_name&quot;:</span> <span class="err">&quot;https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f&quot;,</span> <span class="err">&quot;default&quot;:</span> <span class="err">&quot;cluster_name&quot;}}</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>* About to connect() to ec2-1-2-3-4.compute-1.amazonaws.com port 443 (#0)
+</span><span class='line'>*   Trying 10.0.0.1... connected
+</span><span class='line'>* successfully set certificate verify locations:
+</span><span class='line'>*   CAfile: none
+</span><span class='line'>  CApath: /etc/ssl/certs
+</span><span class='line'>* SSLv3, TLS handshake, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Server hello (2):
+</span><span class='line'>* SSLv3, TLS handshake, CERT (11):
+</span><span class='line'>* SSLv3, TLS handshake, Server finished (14):
+</span><span class='line'>* SSLv3, TLS handshake, Client key exchange (16):
+</span><span class='line'>* SSLv3, TLS change cipher, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Finished (20):
+</span><span class='line'>* SSLv3, TLS change cipher, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Finished (20):
+</span><span class='line'>* SSL connection using AES256-SHA
+</span><span class='line'>* Server certificate:
+</span><span class='line'>*        subject: C=AU; ST=Some-State; O=Internet Widgits Pty Ltd
+</span><span class='line'>*        start date: 2013-01-23 06:24:57 GMT
+</span><span class='line'>*        expire date: 2013-02-22 06:24:57 GMT
+</span><span class='line'>* SSL: unable to obtain common name from peer certificate
+</span><span class='line'>&gt; GET /auth/v1.0 HTTP/1.1
+</span><span class='line'>&gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0 OpenSSL/1.0.1 zlib/1.2.3.4 libidn/1.23 librtmp/2.3
+</span><span class='line'>&gt; Host: ec2-1-2-3-4.compute-1.amazonaws.com
+</span><span class='line'>&gt; Accept: */*
+</span><span class='line'>&gt; X-Storage-User: test:tester
+</span><span class='line'>&gt; X-Storage-Pass: testing
+</span><span class='line'>&gt;
+</span><span class='line'>&lt; HTTP/1.1 200 OK
+</span><span class='line'>&lt; X-Storage-Url: https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f
+</span><span class='line'>&lt; X-Storage-Token: AUTH_tkd26a954e86534b9498f1b196fdb60ac2
+</span><span class='line'>&lt; X-Auth-Token: AUTH_tkd26a954e86534b9498f1b196fdb60ac2
+</span><span class='line'>&lt; Content-Length: 155
+</span><span class='line'>&lt; Date: Thu, 24 Jan 2013 03:59:09 GMT
+</span><span class='line'>&lt;
+</span><span class='line'>* Connection #0 to host ec2-1-2-3-4.compute-1.amazonaws.com left intact
+</span><span class='line'>* Closing connection #0
+</span><span class='line'>* SSLv3, TLS alert, Client hello (1):
+</span><span class='line'>{"storage": {"cluster_name": "https://ec2-1-2-3-4.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f", "default": "cluster_name"}}</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Next we make a request with the authentication token.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">curl</span> <span class="err">-k</span> <span class="err">-v</span> <span class="err">-H</span> <span class="err">&#39;X-Auth-Token:</span> <span class="err">AUTH_tkd26a954e86534b9498f1b196fdb60ac2&#39;</span> <span class="err">https://ec2-184-73-4-50.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>curl -k -v -H 'X-Auth-Token: AUTH_tkd26a954e86534b9498f1b196fdb60ac2' https://ec2-184-73-4-50.compute-1.amazonaws.com:443/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f</span></code></pre></td></tr></table></div></figure>
 
 
 <p>You should get this output.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -836,65 +803,61 @@
 <span class='line-number'>35</span>
 <span class='line-number'>36</span>
 <span class='line-number'>37</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">*</span> <span class="err">About</span> <span class="err">to</span> <span class="err">connect()</span> <span class="err">to</span> <span class="err">ec2-1-2-3-4.compute-1.amazonaws.com</span> <span class="err">port</span> <span class="err">443</span> <span class="err">(</span><span class="c1">#0)</span>
-</span><span class='line'><span class="err">*</span>   <span class="err">Trying</span> <span class="err">10.0.0.1...</span> <span class="err">connected</span>
-</span><span class='line'><span class="err">*</span> <span class="err">successfully</span> <span class="err">set</span> <span class="err">certificate</span> <span class="err">verify</span> <span class="err">locations:</span>
-</span><span class='line'><span class="err">*</span>   <span class="err">CAfile:</span> <span class="err">none</span>
-</span><span class='line'>  <span class="err">CApath:</span> <span class="err">/etc/ssl/certs</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Server</span> <span class="err">hello</span> <span class="err">(2):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">CERT</span> <span class="err">(11):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Server</span> <span class="err">finished</span> <span class="err">(14):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Client</span> <span class="err">key</span> <span class="err">exchange</span> <span class="err">(16):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">change</span> <span class="err">cipher,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Finished</span> <span class="err">(20):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">change</span> <span class="err">cipher,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">handshake,</span> <span class="err">Finished</span> <span class="err">(20):</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSL</span> <span class="err">connection</span> <span class="err">using</span> <span class="err">AES256-SHA</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Server</span> <span class="err">certificate:</span>
-</span><span class='line'><span class="na">*        subject: C</span><span class="o">=</span><span class="s">AU; ST=Some-State; O=Internet Widgits Pty Ltd</span>
-</span><span class='line'><span class="err">*</span>        <span class="err">start</span> <span class="err">date:</span> <span class="err">2013-01-23</span> <span class="err">06:24:57</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">*</span>        <span class="err">expire</span> <span class="err">date:</span> <span class="err">2013-02-22</span> <span class="err">06:24:57</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSL:</span> <span class="err">unable</span> <span class="err">to</span> <span class="err">obtain</span> <span class="err">common</span> <span class="err">name</span> <span class="err">from</span> <span class="err">peer</span> <span class="err">certificate</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">GET</span> <span class="err">/v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f</span> <span class="err">HTTP/1.1</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">User-Agent:</span> <span class="err">curl/7.22.0</span> <span class="err">(x86_64-pc-linux-gnu)</span> <span class="err">libcurl/7.22.0</span> <span class="err">OpenSSL/1.0.1</span> <span class="err">zlib/1.2.3.4</span> <span class="err">libidn/1.23</span> <span class="err">librtmp/2.3</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">Host:</span> <span class="err">ec2-1-2-3-4.compute-1.amazonaws.com</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">Accept:</span> <span class="err">*/*</span>
-</span><span class='line'><span class="err">&gt;</span> <span class="err">X-Auth-Token:</span> <span class="err">AUTH_tkd26a954e86534b9498f1b196fdb60ac2</span>
-</span><span class='line'><span class="err">&gt;</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">HTTP/1.1</span> <span class="err">204</span> <span class="err">No</span> <span class="err">Content</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Account-Object-Count:</span> <span class="err">0</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Account-Bytes-Used:</span> <span class="err">0</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">X-Account-Container-Count:</span> <span class="err">0</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">Accept-Ranges:</span> <span class="err">bytes</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">Content-Length:</span> <span class="err">0</span>
-</span><span class='line'><span class="err">&lt;</span> <span class="err">Date:</span> <span class="err">Thu,</span> <span class="err">24</span> <span class="err">Jan</span> <span class="err">2013</span> <span class="err">04:00:47</span> <span class="err">GMT</span>
-</span><span class='line'><span class="err">&lt;</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Connection</span> <span class="c1">#0 to host ec2-1-2-3-4.compute-1.amazonaws.com left intact</span>
-</span><span class='line'><span class="err">*</span> <span class="err">Closing</span> <span class="err">connection</span> <span class="c1">#0</span>
-</span><span class='line'><span class="err">*</span> <span class="err">SSLv3,</span> <span class="err">TLS</span> <span class="err">alert,</span> <span class="err">Client</span> <span class="err">hello</span> <span class="err">(1):</span>
-</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>* About to connect() to ec2-1-2-3-4.compute-1.amazonaws.com port 443 (#0)
+</span><span class='line'>*   Trying 10.0.0.1... connected
+</span><span class='line'>* successfully set certificate verify locations:
+</span><span class='line'>*   CAfile: none
+</span><span class='line'>  CApath: /etc/ssl/certs
+</span><span class='line'>* SSLv3, TLS handshake, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Server hello (2):
+</span><span class='line'>* SSLv3, TLS handshake, CERT (11):
+</span><span class='line'>* SSLv3, TLS handshake, Server finished (14):
+</span><span class='line'>* SSLv3, TLS handshake, Client key exchange (16):
+</span><span class='line'>* SSLv3, TLS change cipher, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Finished (20):
+</span><span class='line'>* SSLv3, TLS change cipher, Client hello (1):
+</span><span class='line'>* SSLv3, TLS handshake, Finished (20):
+</span><span class='line'>* SSL connection using AES256-SHA
+</span><span class='line'>* Server certificate:
+</span><span class='line'>*        subject: C=AU; ST=Some-State; O=Internet Widgits Pty Ltd
+</span><span class='line'>*        start date: 2013-01-23 06:24:57 GMT
+</span><span class='line'>*        expire date: 2013-02-22 06:24:57 GMT
+</span><span class='line'>* SSL: unable to obtain common name from peer certificate
+</span><span class='line'>&gt; GET /v1/AUTH_f1e9d209-4543-4907-8ae3-98f24e0b051f HTTP/1.1
+</span><span class='line'>&gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0 OpenSSL/1.0.1 zlib/1.2.3.4 libidn/1.23 librtmp/2.3
+</span><span class='line'>&gt; Host: ec2-1-2-3-4.compute-1.amazonaws.com
+</span><span class='line'>&gt; Accept: */*
+</span><span class='line'>&gt; X-Auth-Token: AUTH_tkd26a954e86534b9498f1b196fdb60ac2
+</span><span class='line'>&gt;
+</span><span class='line'>&lt; HTTP/1.1 204 No Content
+</span><span class='line'>&lt; X-Account-Object-Count: 0
+</span><span class='line'>&lt; X-Account-Bytes-Used: 0
+</span><span class='line'>&lt; X-Account-Container-Count: 0
+</span><span class='line'>&lt; Accept-Ranges: bytes
+</span><span class='line'>&lt; Content-Length: 0
+</span><span class='line'>&lt; Date: Thu, 24 Jan 2013 04:00:47 GMT
+</span><span class='line'>&lt;
+</span><span class='line'>* Connection #0 to host ec2-1-2-3-4.compute-1.amazonaws.com left intact
+</span><span class='line'>* Closing connection #0
+</span><span class='line'>* SSLv3, TLS alert, Client hello (1):</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Now we are able to use our Swift store. The <strong>stat</strong> command shows you what is on the server.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">swift</span> <span class="err">-A</span> <span class="err">https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0</span> <span class="err">-U</span> <span class="err">test:tester</span> <span class="err">-K</span> <span class="err">testing</span> <span class="err">stat</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>swift -A https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0 -U test:tester -K testing stat</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Have a look at the options available with the help option.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">swift</span> <span class="err">-h</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>swift -h</span></code></pre></td></tr></table></div></figure>
 
 
 <p>Try uploading a file with the <strong>upload</strong> command.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">swift</span> <span class="err">-A</span> <span class="err">https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0</span> <span class="err">-U</span> <span class="err">test1:tester1</span> <span class="err">-K</span> <span class="err">testing</span> <span class="err">upload</span> <span class="err">test</span> <span class="err">foo.gz</span>
-</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>swift -A https://ec2-1-2-3-4.compute-1.amazonaws.com/auth/v1.0 -U test1:tester1 -K testing upload test foo.gz</span></code></pre></td></tr></table></div></figure>
 
 
 <p>And there you go, a working swift cluster. Please let us know if there are any mistakes. Thanks!</p>
